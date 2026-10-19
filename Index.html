@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multi Drive Storage</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1a1a1a;--mut:#666;--bd:#ddd;--ac:#1a73e8}
+@media (prefers-color-scheme:dark){:root{--bg:#121212;--card:#1e1e1e;--tx:#eee;--mut:#999;--bd:#333;--ac:#6ea8fe}}
+*{box-sizing:border-box}
+body{margin:0;padding:14px;font-family:system-ui,sans-serif;background:var(--bg);color:var(--tx);max-width:720px;margin:auto}
+h1{font-size:20px;margin:6px 0 14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:14px}
+h2{font-size:15px;margin:0 0 10px}
+button{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:9px 14px;font-size:14px}
+button.s{background:transparent;color:var(--ac);border:1px solid var(--ac);padding:5px 10px;font-size:13px}
+button:disabled{opacity:.5}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bd)}
+.row:last-child{border:0}
+.m{color:var(--mut);font-size:12px;word-break:break-all}
+.bar{height:6px;background:var(--bd);border-radius:3px;margin-top:5px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ac)}
+#st{font-size:13px;color:var(--mut);margin-top:8px;min-height:18px}
+</style>
+</head>
+<body>
+<h1>Multi Drive Storage</h1>
+
+<div class="card">
+  <h2>ফাইল আপলোড</h2>
+  <input type="file" id="f"><br><br>
+  <button id="up">আপলোড করুন</button>
+  <div class="bar"><i id="pg" style="width:0"></i></div>
+  <div id="st"></div>
+</div>
+
+<div class="card">
+  <h2>অ্যাকাউন্ট স্টোরেজ <button class="s" id="rs" style="float:right">রিফ্রেশ</button></h2>
+  <div id="acc">লোড হচ্ছে...</div>
+</div>
+
+<div class="card">
+  <h2>সব ফাইল</h2>
+  <div id="files">লোড হচ্ছে...</div>
+</div>
+
+<script>
+// ===== সেটিং: এখানে সব Web App URL বসান =====
+const KEY = '22143356';
+const ACCOUNTS = [
+  { name: 'Account 1', url: 'https://script.google.com/macros/s/AKfycbxHqu9VUs5pzMkTof2amW7VwT6Auriqn7usSCC9QlUax6wfIPFk7VqOYLateKmjZDmx-Q/exec' },
+  // { name: 'Account 2', url: 'https://script.google.com/macros/s/.../exec' },
+];
+const CH = 1.5 * 1024 * 1024; // আপলোড চাঙ্ক
+
+const $ = id => document.getElementById(id);
+const fmt = b => b > 1e9 ? (b/1e9).toFixed(2)+' GB' : b > 1e6 ? (b/1e6).toFixed(1)+' MB' : (b/1e3).toFixed(0)+' KB';
+const status = t => $('st').textContent = t;
+
+async function get(a, q) {
+  const r = await fetch(a.url + '?key=' + encodeURIComponent(KEY) + '&' + q);
+  return r.json();
+}
+async function post(a, body) {
+  const r = await fetch(a.url, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ key: KEY, ...body }) });
+  return r.json();
+}
+
+async function loadSpace() {
+  const res = await Promise.all(ACCOUNTS.map(a => get(a, 'action=space').catch(() => ({ ok: false }))));
+  res.forEach((r, i) => ACCOUNTS[i].space = r);
+  const box = $('acc'); box.innerHTML = '';
+  ACCOUNTS.forEach(a => {
+    const r = a.space, d = document.createElement('div'); d.className = 'row';
+    const l = document.createElement('div');
+    const t = document.createElement('div'); t.textContent = a.name + (r.ok ? ' (' + r.email + ')' : '');
+    const m = document.createElement('div'); m.className = 'm';
+    m.textContent = r.ok ? fmt(r.used) + ' / ' + fmt(r.limit) + ' | খালি ' + fmt(r.free) : 'সংযোগ হয়নি (URL/পাসওয়ার্ড দেখুন)';
+    l.append(t, m);
+    if (r.ok) { const b = document.createElement('div'); b.className = 'bar'; b.innerHTML = '<i style="width:' + (r.used / r.limit * 100) + '%"></i>'; l.append(b); }
+    d.append(l); box.append(d);
+  });
+}
+
+async function loadFiles() {
+  const res = await Promise.all(ACCOUNTS.map(a => get(a, 'action=list').catch(() => ({ ok: false, files: [] }))));
+  const box = $('files'); box.innerHTML = ''; let n = 0;
+  res.forEach((r, i) => (r.files || []).forEach(f => {
+    n++;
+    const d = document.createElement('div'); d.className = 'row';
+    const l = document.createElement('div');
+    const t = document.createElement('div'); t.textContent = f.name;
+    const m = document.createElement('div'); m.className = 'm'; m.textContent = fmt(f.size) + ' | ' + ACCOUNTS[i].name;
+    l.append(t, m);
+    const bs = document.createElement('div');
+    const dl = document.createElement('button'); dl.className = 's'; dl.textContent = 'ডাউনলোড';
+    dl.onclick = () => download(ACCOUNTS[i], f);
+    const dx = document.createElement('button'); dx.className = 's'; dx.textContent = 'ডিলিট'; dx.style.marginLeft = '4px';
+    dx.onclick = async () => { if (confirm('ডিলিট করবেন?')) { await post(ACCOUNTS[i], { action: 'delete', id: f.id }); refresh(); } };
+    bs.append(dl, dx); d.append(l, bs); box.append(d);
+  }));
+  if (!n) box.textContent = 'কোনো ফাইল নেই';
+}
+
+function b64(f) {
+  return new Promise(ok => { const r = new FileReader(); r.onload = () => ok(r.result.split(',')[1]); r.readAsDataURL(f); });
+}
+
+async function upload() {
+  const file = $('f').files[0];
+  if (!file) return status('আগে ফাইল বাছুন');
+  $('up').disabled = true;
+  try {
+    status('খালি জায়গা দেখা হচ্ছে...');
+    await loadSpace();
+    // আপলোডের সময় সাময়িকভাবে ২ গুণ জায়গা লাগে
+    const ok = ACCOUNTS.filter(a => a.space.ok && a.space.free > file.size * 2.2 + 1e6)
+      .sort((x, y) => y.space.free - x.space.free);
+    if (!ok.length) throw new Error('কোনো অ্যাকাউন্টে যথেষ্ট জায়গা নেই');
+    const acc = ok[0];
+    const total = Math.max(1, Math.ceil(file.size / CH));
+    const id = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    for (let i = 0; i < total; i++) {
+      status(acc.name + '-এ আপলোড হচ্ছে... ' + (i + 1) + '/' + total);
+      const data = await b64(file.slice(i * CH, (i + 1) * CH));
+      const r = await post(acc, { action: 'upload_chunk', uploadId: id, index: i, total, data, name: file.name, mime: file.type });
+      if (!r.ok) throw new Error(r.error || 'আপলোড ব্যর্থ');
+      $('pg').style.width = ((i + 1) / total * 100) + '%';
+    }
+    status('সম্পন্ন: ' + file.name + ' → ' + acc.name);
+    $('f').value = '';
+    refresh();
+  } catch (e) { status('ত্রুটি: ' + e.message); }
+  $('up').disabled = false;
+}
+
+async function download(a, f) {
+  const parts = []; let total = 1;
+  try {
+    for (let i = 0; i < total; i++) {
+      status('ডাউনলোড হচ্ছে... ' + (i + 1) + '/' + total);
+      const r = await get(a, 'action=download&id=' + f.id + '&index=' + i);
+      if (!r.ok) throw new Error(r.error);
+      total = r.total;
+      const bin = atob(r.data), u = new Uint8Array(bin.length);
+      for (let k = 0; k < bin.length; k++) u[k] = bin.charCodeAt(k);
+      parts.push(u);
+    }
+    const url = URL.createObjectURL(new Blob(parts));
+    const el = document.createElement('a'); el.href = url; el.download = f.name; el.click();
+    status('ডাউনলোড সম্পন্ন');
+  } catch (e) { status('ত্রুটি: ' + e.message); }
+}
+
+function refresh() { loadSpace(); loadFiles(); }
+$('up').onclick = upload;
+$('rs').onclick = refresh;
+refresh();
+</script>
+</body>
+</html>
