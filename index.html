@@ -21,6 +21,10 @@ button:disabled{opacity:.5}
 .bar{height:6px;background:var(--bd);border-radius:3px;margin-top:5px;overflow:hidden}
 .bar i{display:block;height:100%;background:var(--ac)}
 #st{font-size:13px;color:var(--mut);margin-top:8px;min-height:18px}
+summary{font-size:15px;font-weight:600;cursor:pointer}
+.u{display:flex;align-items:center;gap:6px;margin-top:8px}
+.u span{font-size:12px;color:var(--mut);width:22px;text-align:right}
+input[type=text],input[type=password]{flex:1;width:100%;padding:8px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font-size:13px}
 </style>
 </head>
 <body>
@@ -44,18 +48,66 @@ button:disabled{opacity:.5}
   <div id="files">লোড হচ্ছে...</div>
 </div>
 
+<div class="card">
+  <details>
+    <summary>⚙ সেটিং: URL বসান (সর্বোচ্চ ১৫টি)</summary>
+    <div class="u"><span>🔑</span><input type="password" id="pw" placeholder="পাসওয়ার্ড (SECRET)"></div>
+    <div id="ulist"></div>
+    <br>
+    <button id="sv">সেভ করুন</button>
+    <div class="m" id="sm" style="margin-top:6px"></div>
+  </details>
+</div>
+
 <script>
-// ===== সেটিং: এখানে সব Web App URL বসান =====
-const KEY = '22143356';
-const ACCOUNTS = [
-  { name: 'Account 1', url: 'https://script.google.com/macros/s/AKfycbxHqu9VUs5pzMkTof2amW7VwT6Auriqn7usSCC9QlUax6wfIPFk7VqOYLateKmjZDmx-Q/exec' },
-  // { name: 'Account 2', url: 'https://script.google.com/macros/s/.../exec' },
+// ===== ডিফল্ট সেটিং (সেটিং প্যানেল থেকেও বদলানো যায়) =====
+const DEFAULT_KEY = '22143356';
+const DEFAULT_URLS = [
+  'https://script.google.com/macros/s/AKfycbxHqu9VUs5pzMkTof2amW7VwT6Auriqn7usSCC9QlUax6wfIPFk7VqOYLateKmjZDmx-Q/exec',
+  'https://script.google.com/macros/s/AKfycbw340q20tmMcL51MvsqFeLsBhWAokSU12QsN76bxaxP44TomOIZblqvRo_POp7hsB--BA/exec'
 ];
+const MAXN = 15;
 const CH = 1.5 * 1024 * 1024; // আপলোড চাঙ্ক
 
 const $ = id => document.getElementById(id);
 const fmt = b => b > 1e9 ? (b/1e9).toFixed(2)+' GB' : b > 1e6 ? (b/1e6).toFixed(1)+' MB' : (b/1e3).toFixed(0)+' KB';
 const status = t => $('st').textContent = t;
+
+let KEY = DEFAULT_KEY, ACCOUNTS = [], URLS = DEFAULT_URLS.slice();
+try {
+  KEY = localStorage.getItem('key') || DEFAULT_KEY;
+  const s = JSON.parse(localStorage.getItem('urls'));
+  if (Array.isArray(s)) URLS = s;
+} catch (e) {}
+
+function setAccounts() {
+  ACCOUNTS = [];
+  URLS.forEach((u, i) => { u = (u || '').trim(); if (u) ACCOUNTS.push({ name: 'Account ' + (i + 1), url: u }); });
+}
+
+function renderSettings() {
+  $('pw').value = KEY;
+  const box = $('ulist'); box.innerHTML = '';
+  for (let i = 0; i < MAXN; i++) {
+    const d = document.createElement('div'); d.className = 'u';
+    const n = document.createElement('span'); n.textContent = i + 1;
+    const inp = document.createElement('input'); inp.type = 'text'; inp.className = 'ui';
+    inp.placeholder = 'https://script.google.com/macros/s/.../exec';
+    inp.value = URLS[i] || '';
+    d.append(n, inp); box.append(d);
+  }
+}
+
+function saveSettings() {
+  const list = [...document.querySelectorAll('.ui')].map(x => x.value.trim());
+  const bad = list.find(u => u && !u.startsWith('https://script.google.com/'));
+  if (bad) { $('sm').textContent = 'ভুল URL: ' + bad; return; }
+  URLS = list; KEY = $('pw').value.trim() || DEFAULT_KEY;
+  try { localStorage.setItem('urls', JSON.stringify(URLS)); localStorage.setItem('key', KEY); } catch (e) {}
+  setAccounts();
+  $('sm').textContent = 'সেভ হয়েছে (' + ACCOUNTS.length + 'টি অ্যাকাউন্ট)';
+  refresh();
+}
 
 async function get(a, q) {
   const r = await fetch(a.url + '?key=' + encodeURIComponent(KEY) + '&' + q);
@@ -67,24 +119,30 @@ async function post(a, body) {
 }
 
 async function loadSpace() {
+  const box = $('acc'); box.innerHTML = '';
+  if (!ACCOUNTS.length) { box.textContent = 'কোনো URL নেই। নিচের সেটিং থেকে বসান।'; return; }
   const res = await Promise.all(ACCOUNTS.map(a => get(a, 'action=space').catch(() => ({ ok: false }))));
   res.forEach((r, i) => ACCOUNTS[i].space = r);
-  const box = $('acc'); box.innerHTML = '';
+  let tf = 0;
   ACCOUNTS.forEach(a => {
     const r = a.space, d = document.createElement('div'); d.className = 'row';
     const l = document.createElement('div');
     const t = document.createElement('div'); t.textContent = a.name + (r.ok ? ' (' + r.email + ')' : '');
     const m = document.createElement('div'); m.className = 'm';
     m.textContent = r.ok ? fmt(r.used) + ' / ' + fmt(r.limit) + ' | খালি ' + fmt(r.free) : 'সংযোগ হয়নি (URL/পাসওয়ার্ড দেখুন)';
+    if (r.ok) tf += r.free;
     l.append(t, m);
     if (r.ok) { const b = document.createElement('div'); b.className = 'bar'; b.innerHTML = '<i style="width:' + (r.used / r.limit * 100) + '%"></i>'; l.append(b); }
     d.append(l); box.append(d);
   });
+  const s = document.createElement('div'); s.className = 'm'; s.style.marginTop = '8px';
+  s.textContent = 'মোট খালি: ' + fmt(tf); box.append(s);
 }
 
 async function loadFiles() {
+  const box = $('files'); box.innerHTML = '';
   const res = await Promise.all(ACCOUNTS.map(a => get(a, 'action=list').catch(() => ({ ok: false, files: [] }))));
-  const box = $('files'); box.innerHTML = ''; let n = 0;
+  let n = 0;
   res.forEach((r, i) => (r.files || []).forEach(f => {
     n++;
     const d = document.createElement('div'); d.className = 'row';
@@ -114,7 +172,7 @@ async function upload() {
     status('খালি জায়গা দেখা হচ্ছে...');
     await loadSpace();
     // আপলোডের সময় সাময়িকভাবে ২ গুণ জায়গা লাগে
-    const ok = ACCOUNTS.filter(a => a.space.ok && a.space.free > file.size * 2.2 + 1e6)
+    const ok = ACCOUNTS.filter(a => a.space && a.space.ok && a.space.free > file.size * 2.2 + 1e6)
       .sort((x, y) => y.space.free - x.space.free);
     if (!ok.length) throw new Error('কোনো অ্যাকাউন্টে যথেষ্ট জায়গা নেই');
     const acc = ok[0];
@@ -155,6 +213,9 @@ async function download(a, f) {
 function refresh() { loadSpace(); loadFiles(); }
 $('up').onclick = upload;
 $('rs').onclick = refresh;
+$('sv').onclick = saveSettings;
+setAccounts();
+renderSettings();
 refresh();
 </script>
 </body>
