@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="bn">
 <head>
@@ -13,7 +14,7 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;background:var(--bg);color:var(--tx);font-family:'Hind Siliguri',system-ui,sans-serif;line-height:1.5}
 .wrap{max-width:760px;margin:auto;padding:0 14px 40px}
-button,select{font-family:inherit}
+button,select,input{font-family:inherit}
 :focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 
 /* হিরো */
@@ -71,6 +72,15 @@ select{flex:1;min-width:200px;padding:11px 12px;border:1px solid var(--bd);borde
 .sb:hover{border-color:var(--blue);color:var(--blue)}
 .sb.d:hover{border-color:var(--coral);color:var(--coral)}
 .empty{text-align:center;color:var(--mut);padding:18px 0;font-size:14px}
+
+/* File Search Bar — নতুন যোগ করা হয়েছে */
+.file-search{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:4px 10px 4px 13px;border:1px solid var(--bd);border-radius:12px;background:var(--bg);transition:border-color .2s,box-shadow .2s}
+.file-search:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px rgba(47,107,255,.10)}
+.file-search span{font-size:17px}
+.file-search input{flex:1;width:100%;min-width:0;padding:10px 0;border:0;outline:0;background:transparent;color:var(--tx);font-size:14px}
+.file-search input::placeholder{color:var(--mut)}
+.file-search button{display:none;width:30px;height:30px;border:0;border-radius:8px;background:var(--bd);color:var(--mut);cursor:pointer}
+.file-search button.show{display:block}
 @media (max-width:480px){.big{font-size:44px}.fa{flex-direction:column}}
 </style>
 </head>
@@ -108,6 +118,14 @@ select{flex:1;min-width:200px;padding:11px 12px;border:1px solid var(--bd);borde
 
 <section class="card">
   <h2>আপনার ফাইল</h2>
+
+  <!-- File Search Bar -->
+  <div class="file-search">
+    <span>🔍</span>
+    <input type="search" id="fileSearch" placeholder="ফাইলের নাম লিখে খুঁজুন..." autocomplete="off" aria-label="ফাইল খুঁজুন">
+    <button type="button" id="clearSearch" title="সার্চ মুছুন">✕</button>
+  </div>
+
   <div id="files"><div class="empty">লোড হচ্ছে...</div></div>
 </section>
 
@@ -217,6 +235,9 @@ async function loadFiles() {
     fa.append(dl, dx); row.append(bd, fi, fa); box.append(row);
   }));
   if (!n) box.append(el('div', 'empty', 'এখনো কোনো ফাইল নেই। উপরে আপলোড করুন।'));
+
+  // নতুন: তালিকা রেন্ডার হওয়ার পর বর্তমান সার্চ প্রয়োগ
+  searchFiles();
 }
 
 function b64(f) { return new Promise(ok => { const r = new FileReader(); r.onload = () => ok(r.result.split(',')[1]); r.readAsDataURL(f); }); }
@@ -289,6 +310,47 @@ fillSelect();
 $('up').onclick = upload;
 $('rs').onclick = refresh;
 refresh();
+
+/* নতুন: File Search */
+const fileSearch = $('fileSearch');
+const clearSearch = $('clearSearch');
+
+function searchFiles() {
+  const query = fileSearch.value.trim().toLocaleLowerCase();
+  const rows = $('files').querySelectorAll('.file');
+  let found = 0;
+
+  rows.forEach(row => {
+    const name = row.querySelector('.fi .n')?.textContent || '';
+    const match = name.toLocaleLowerCase().includes(query);
+
+    row.style.display = match ? '' : 'none';
+    if (match) found++;
+  });
+
+  clearSearch.classList.toggle('show', query.length > 0);
+
+  let empty = $('searchNoResults');
+
+  if (query && found === 0 && rows.length > 0) {
+    if (!empty) {
+      empty = el('div', 'empty', 'কোনো ফাইল পাওয়া যায়নি');
+      empty.id = 'searchNoResults';
+      $('files').append(empty);
+    }
+    empty.style.display = '';
+  } else if (empty) {
+    empty.style.display = 'none';
+  }
+}
+
+fileSearch.addEventListener('input', searchFiles);
+
+clearSearch.addEventListener('click', () => {
+  fileSearch.value = '';
+  searchFiles();
+  fileSearch.focus();
+});
 </script>
 </body>
 </html>
