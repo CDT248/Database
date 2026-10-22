@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="bn">
 <head>
@@ -18,10 +17,21 @@ body{margin:0;background:var(--bg);color:var(--tx);font-family:'Hind Siliguri',s
 button,select,input{font-family:inherit}
 :focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 
+/* লগইন */
+#gate{min-height:100vh;display:grid;place-items:center;padding:20px}
+body.in #gate{display:none}
+body:not(.in) .wrap{display:none}
+.gc{width:100%;max-width:340px;background:var(--card);border:1px solid var(--bd);border-radius:var(--r);padding:26px 22px;display:grid;gap:12px;text-align:center}
+.gc .gi{font-size:36px;line-height:1}
+.gc h2{margin:0;font-size:19px}
+.gc input{padding:12px;border:1px solid var(--bd);border-radius:12px;background:var(--bg);color:var(--tx);font-size:15px}
+#ge{font-size:13px;color:var(--coral);min-height:18px}
+
 /* হিরো */
 .hero{background:var(--ink);color:#fff;margin:0 -14px;padding:26px 20px 24px;border-radius:0 0 28px 28px}
-.hero .top{display:flex;justify-content:space-between;align-items:center;font-size:14px;color:#9fb2c9}
+.hero .top{display:flex;justify-content:space-between;align-items:center;font-size:14px;color:#9fb2c9;gap:8px}
 .hero .top b{color:#fff;font-size:16px;font-weight:600}
+.hero .tb{display:flex;gap:6px}
 .big{font-size:54px;font-weight:700;letter-spacing:-1.5px;line-height:1.05;margin:18px 0 2px}
 .big small{font-size:22px;font-weight:500;letter-spacing:0;margin-left:6px;color:#9fb2c9}
 .sub{font-size:14px;color:#9fb2c9}
@@ -31,6 +41,7 @@ button,select,input{font-family:inherit}
 .legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:12px;font-size:12px;color:#9fb2c9}
 .legend span:before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:5px}
 .rf{background:#1b2c44;color:#fff;border:0;border-radius:20px;padding:6px 14px;font-size:13px;cursor:pointer}
+.rf.lo{background:var(--coral)}
 
 /* কার্ড */
 .card{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);padding:16px;margin-top:16px}
@@ -74,7 +85,7 @@ select{flex:1;min-width:200px;padding:11px 12px;border:1px solid var(--bd);borde
 .sb.d:hover{border-color:var(--coral);color:var(--coral)}
 .empty{text-align:center;color:var(--mut);padding:18px 0;font-size:14px}
 
-/* File Search Bar — নতুন যোগ করা হয়েছে */
+/* File Search Bar */
 .file-search{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:4px 10px 4px 13px;border:1px solid var(--bd);border-radius:12px;background:var(--bg);transition:border-color .2s,box-shadow .2s}
 .file-search:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px rgba(47,107,255,.10)}
 .file-search span{font-size:17px}
@@ -86,10 +97,22 @@ select{flex:1;min-width:200px;padding:11px 12px;border:1px solid var(--bd);borde
 </style>
 </head>
 <body>
+
+<!-- লগইন পেজ -->
+<div id="gate">
+  <form class="gc" id="gf">
+    <div class="gi">☁</div>
+    <h2>Multi Drive Storage</h2>
+    <input type="password" id="gp" placeholder="পাসওয়ার্ড" autocomplete="current-password" required>
+    <button class="btn" id="gb">লগইন</button>
+    <div id="ge"></div>
+  </form>
+</div>
+
 <div class="wrap">
 
 <header class="hero">
-  <div class="top"><b>☁ Multi Drive Storage</b><button class="rf" id="rs">রিফ্রেশ</button></div>
+  <div class="top"><b>☁ Multi Drive Storage</b><div class="tb"><button class="rf" id="rs">রিফ্রেশ</button><button class="rf lo" id="lo">লগআউট</button></div></div>
   <div class="big" id="tfree">—<small></small></div>
   <div class="sub" id="tsub">অ্যাকাউন্ট যাচাই হচ্ছে...</div>
   <div class="seg" id="seg"></div>
@@ -120,7 +143,6 @@ select{flex:1;min-width:200px;padding:11px 12px;border:1px solid var(--bd);borde
 <section class="card">
   <h2>আপনার ফাইল</h2>
 
-  <!-- File Search Bar -->
   <div class="file-search">
     <span>🔍</span>
     <input type="search" id="fileSearch" placeholder="ফাইলের নাম লিখে খুঁজুন..." autocomplete="off" aria-label="ফাইল খুঁজুন">
@@ -134,10 +156,9 @@ select{flex:1;min-width:200px;padding:11px 12px;border:1px solid var(--bd);borde
 
 <script>
 // ============================================================
-//  সেটিং: পাসওয়ার্ড আর ১৫টি URL এখানে বসান (ফাঁকা থাকলে বাদ যাবে)
+//  সেটিং: শুধু URL এখানে বসান (আপনার পুরনো ফাইল থেকে কপি করে)।
+//  KEY এখানে লেখা নেই। লগইনের সময় আপনি নিজে পাসওয়ার্ড হিসেবে দেবেন।
 // ============================================================
-const KEY = '22143356';
-
 const URLS = [
   /* 1  */ 'https://script.google.com/macros/s/AKfycbxHqu9VUs5pzMkTof2amW7VwT6Auriqn7usSCC9QlUax6wfIPFk7VqOYLateKmjZDmx-Q/exec',
   /* 2  */ 'https://script.google.com/macros/s/AKfycbzmSTLgVwTCKPim29hbeSW43O42W5HK4WcY1zJKgGkjKx1dJEN4fSVp931CHLkD9LTMQg/exec',
@@ -157,6 +178,7 @@ const URLS = [
 ];
 // ============================================================
 
+let KEY = '';
 const CH = 1.5 * 1024 * 1024;
 const COLORS = ['#2f6bff','#17b890','#ff6b57','#f5a623','#8e5cf7','#e6478f','#14a7d6','#7bb82b','#d9534f','#5a6fd6','#c98a1b','#2aa198','#b85cd6','#4d8f5b','#d6603a'];
 const ACCOUNTS = [];
@@ -236,8 +258,6 @@ async function loadFiles() {
     fa.append(dl, dx); row.append(bd, fi, fa); box.append(row);
   }));
   if (!n) box.append(el('div', 'empty', 'এখনো কোনো ফাইল নেই। উপরে আপলোড করুন।'));
-
-  // নতুন: তালিকা রেন্ডার হওয়ার পর বর্তমান সার্চ প্রয়োগ
   searchFiles();
 }
 
@@ -307,12 +327,11 @@ $('f').onchange = showPick;
 dz.addEventListener('drop', e => { if (e.dataTransfer.files.length) { $('f').files = e.dataTransfer.files; showPick(); } });
 
 function refresh() { loadSpace(); loadFiles(); }
-fillSelect();
+function start() { fillSelect(); refresh(); }
 $('up').onclick = upload;
 $('rs').onclick = refresh;
-refresh();
 
-/* নতুন: File Search */
+/* File Search */
 const fileSearch = $('fileSearch');
 const clearSearch = $('clearSearch');
 
@@ -324,7 +343,6 @@ function searchFiles() {
   rows.forEach(row => {
     const name = row.querySelector('.fi .n')?.textContent || '';
     const match = name.toLocaleLowerCase().includes(query);
-
     row.style.display = match ? '' : 'none';
     if (match) found++;
   });
@@ -332,10 +350,9 @@ function searchFiles() {
   clearSearch.classList.toggle('show', query.length > 0);
 
   let empty = $('searchNoResults');
-
   if (query && found === 0 && rows.length > 0) {
     if (!empty) {
-      empty = el('div', 'empty', 'কোনো ফাইল পাওয়া যায়নি');
+      empty = el('div', 'empty', 'কোনো ফাইল পাওয়া যায়নি');
       empty.id = 'searchNoResults';
       $('files').append(empty);
     }
@@ -346,12 +363,67 @@ function searchFiles() {
 }
 
 fileSearch.addEventListener('input', searchFiles);
-
 clearSearch.addEventListener('click', () => {
   fileSearch.value = '';
   searchFiles();
   fileSearch.focus();
 });
+
+/* ===== লগইন: পাসওয়ার্ড (KEY) আপনার Apps Script নিজে যাচাই করে ===== */
+// ফলাফল: 'ok' = সঠিক, 'bad' = ভুল পাসওয়ার্ড, 'error' = সংযোগ হয়নি
+function check(k) {
+  if (!ACCOUNTS.length) return Promise.resolve('error');
+  return new Promise(resolve => {
+    let left = ACCOUNTS.length, answered = false;
+    ACCOUNTS.forEach(a => {
+      fetch(a.url + '?key=' + encodeURIComponent(k) + '&action=space')
+        .then(r => r.json())
+        .then(r => { answered = true; return r; })
+        .catch(() => null)
+        .then(r => {
+          if (r && r.ok) resolve('ok');                        
+          else if (--left === 0) resolve(answered ? 'bad' : 'error');
+        });
+    });
+  });
+}
+
+function openApp(k) {
+  KEY = k;
+  document.body.classList.add('in');
+  start();
+}
+
+$('gf').addEventListener('submit', async e => {
+  e.preventDefault();
+  const k = $('gp').value;
+  $('gb').disabled = true; $('ge').textContent = 'যাচাই হচ্ছে...';
+  const r = await check(k);
+  if (r === 'ok') {
+    try { sessionStorage.setItem('mdk', k); } catch (e) {}
+    openApp(k);
+  } else {
+    $('ge').textContent = r === 'bad' ? 'পাসওয়ার্ড ভুল'
+      : 'সংযোগ হয়নি। ইন্টারনেট বা URL দেখুন';
+  }
+  $('gb').disabled = false;
+});
+
+$('lo').onclick = () => {
+  try { sessionStorage.removeItem('mdk'); } catch (e) {}
+  location.reload();
+};
+let saved = null;
+try { saved = sessionStorage.getItem('mdk'); } catch (e) {}
+if (saved) {
+  openApp(saved);
+  check(saved).then(r => {
+    if (r === 'bad') {
+      try { sessionStorage.removeItem('mdk'); } catch (e) {}
+      location.reload();
+    }
+  });
+}
 </script>
 </body>
 </html>
