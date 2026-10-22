@@ -29,9 +29,9 @@ body:not(.in) .wrap{display:none}
 
 /* হিরো */
 .hero{background:var(--ink);color:#fff;margin:0 -14px;padding:26px 20px 24px;border-radius:0 0 28px 28px}
-.hero .top{display:flex;justify-content:space-between;align-items:center;font-size:14px;color:#9fb2c9;gap:8px}
+.hero .top{display:flex;justify-content:space-between;align-items:center;font-size:14px;color:#9fb2c9;gap:8px;flex-wrap:wrap}
 .hero .top b{color:#fff;font-size:16px;font-weight:600}
-.hero .tb{display:flex;gap:6px}
+.hero .tb{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .big{font-size:54px;font-weight:700;letter-spacing:-1.5px;line-height:1.05;margin:18px 0 2px}
 .big small{font-size:22px;font-weight:500;letter-spacing:0;margin-left:6px;color:#9fb2c9}
 .sub{font-size:14px;color:#9fb2c9}
@@ -42,6 +42,15 @@ body:not(.in) .wrap{display:none}
 .legend span:before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:5px}
 .rf{background:#1b2c44;color:#fff;border:0;border-radius:20px;padding:6px 14px;font-size:13px;cursor:pointer}
 .rf.lo{background:var(--coral)}
+
+/* নতুন Accounts Menu Manage */
+.menu-wrap{position:relative}
+.menu-panel{position:absolute;top:calc(100% + 9px);right:0;width:220px;padding:14px;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.18);z-index:100}
+.menu-panel[hidden]{display:none}
+.menu-title{font-size:15px;font-weight:700;margin-bottom:10px}
+.menu-option{display:flex;align-items:center;gap:9px;font-size:14px;cursor:pointer}
+.menu-option input{width:17px;height:17px;accent-color:var(--blue);cursor:pointer}
+.menu-note{font-size:12px;color:var(--mut);margin-top:9px}
 
 /* কার্ড */
 .card{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);padding:16px;margin-top:16px}
@@ -112,7 +121,25 @@ select{flex:1;min-width:200px;padding:11px 12px;border:1px solid var(--bd);borde
 <div class="wrap">
 
 <header class="hero">
-  <div class="top"><b>☁ Multi Drive Storage</b><div class="tb"><button class="rf" id="rs">রিফ্রেশ</button><button class="rf lo" id="lo">লগআউট</button></div></div>
+  <div class="top">
+    <b>☁ Multi Drive Storage</b>
+    <div class="tb">
+      <!-- নতুন Menu বাটন -->
+      <div class="menu-wrap" id="menuWrap">
+        <button class="rf" id="menuToggle" type="button" aria-expanded="false" aria-controls="menuPanel">☰ Menu</button>
+        <div class="menu-panel" id="menuPanel" hidden>
+          <div class="menu-title">Menu Manage</div>
+          <label class="menu-option">
+            <input type="checkbox" id="accountsVisibility">
+            <span>Accounts দেখান</span>
+          </label>
+          <div class="menu-note">চাইলে Accounts অংশ Hide/Show করুন।</div>
+        </div>
+      </div>
+      <button class="rf" id="rs">রিফ্রেশ</button>
+      <button class="rf lo" id="lo">লগআউট</button>
+    </div>
+  </div>
   <div class="big" id="tfree">—<small></small></div>
   <div class="sub" id="tsub">অ্যাকাউন্ট যাচাই হচ্ছে...</div>
   <div class="seg" id="seg"></div>
@@ -135,7 +162,8 @@ select{flex:1;min-width:200px;padding:11px 12px;border:1px solid var(--bd);borde
   <div id="st"></div>
 </section>
 
-<section class="card">
+<!-- Accounts অংশ: শুধু এই অংশটি Hide/Show হবে -->
+<section class="card" id="accountsSection">
   <h2>অ্যাকাউন্ট</h2>
   <div class="grid" id="acc"></div>
 </section>
@@ -156,9 +184,7 @@ select{flex:1;min-width:200px;padding:11px 12px;border:1px solid var(--bd);borde
 
 <script>
 // ============================================================
-//  সেটিং: শুধু URL এখানে বসান (আপনার পুরনো ফাইল থেকে কপি করে)।
-//  KEY এখানে লেখা নেই। লগইনের সময় আপনি নিজে পাসওয়ার্ড হিসেবে দেবেন।
-// ============================================================
+// সেটিং: শুধু URL এখানে বসান (আপনার পুরনো ফাইল থেকে কপি করে)।
 const URLS = [
   /* 1  */ 'https://script.google.com/macros/s/AKfycbxHqu9VUs5pzMkTof2amW7VwT6Auriqn7usSCC9QlUax6wfIPFk7VqOYLateKmjZDmx-Q/exec',
   /* 2  */ 'https://script.google.com/macros/s/AKfycbzmSTLgVwTCKPim29hbeSW43O42W5HK4WcY1zJKgGkjKx1dJEN4fSVp931CHLkD9LTMQg/exec',
@@ -270,7 +296,7 @@ async function upload() {
   try {
     status('খালি জায়গা দেখা হচ্ছে...');
     await loadSpace();
-    const need = file.size * 2.2 + 1e6; // আপলোডের সময় সাময়িকভাবে ২ গুণ জায়গা লাগে
+    const need = file.size * 2.2 + 1e6;
     let acc;
     if ($('sel').value === 'auto') {
       const ok = ACCOUNTS.filter(a => a.space && a.space.ok && a.space.free > need).sort((x, y) => y.space.free - x.space.free);
@@ -369,8 +395,55 @@ clearSearch.addEventListener('click', () => {
   fileSearch.focus();
 });
 
+/* ===== Accounts Menu Manage: নতুন কোড ===== */
+const menuToggle = $('menuToggle');
+const menuPanel = $('menuPanel');
+const accountsVisibility = $('accountsVisibility');
+const accountsSection = $('accountsSection');
+
+function setAccountsVisibility(show) {
+  accountsVisibility.checked = show;
+  accountsSection.hidden = !show;
+
+  try {
+    localStorage.setItem('md_accounts_visible', show ? '1' : '0');
+  } catch (e) {}
+}
+
+// প্রথমবার Accounts দেখাবে; পরে ব্যবহারকারীর পছন্দ মনে রাখবে।
+let showAccounts = true;
+try {
+  const savedVisibility = localStorage.getItem('md_accounts_visible');
+  if (savedVisibility !== null) showAccounts = savedVisibility !== '0';
+} catch (e) {}
+
+setAccountsVisibility(showAccounts);
+
+menuToggle.addEventListener('click', () => {
+  const willOpen = menuPanel.hidden;
+  menuPanel.hidden = !willOpen;
+  menuToggle.setAttribute('aria-expanded', String(willOpen));
+});
+
+accountsVisibility.addEventListener('change', () => {
+  setAccountsVisibility(accountsVisibility.checked);
+});
+
+document.addEventListener('click', e => {
+  if (!$('menuWrap').contains(e.target)) {
+    menuPanel.hidden = true;
+    menuToggle.setAttribute('aria-expanded', 'false');
+  }
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    menuPanel.hidden = true;
+    menuToggle.setAttribute('aria-expanded', 'false');
+  }
+});
+
 /* ===== লগইন: পাসওয়ার্ড (KEY) আপনার Apps Script নিজে যাচাই করে ===== */
-// ফলাফল: 'ok' = সঠিক, 'bad' = ভুল পাসওয়ার্ড, 'error' = সংযোগ হয়নি
 function check(k) {
   if (!ACCOUNTS.length) return Promise.resolve('error');
   return new Promise(resolve => {
@@ -381,7 +454,7 @@ function check(k) {
         .then(r => { answered = true; return r; })
         .catch(() => null)
         .then(r => {
-          if (r && r.ok) resolve('ok');                        
+          if (r && r.ok) resolve('ok');
           else if (--left === 0) resolve(answered ? 'bad' : 'error');
         });
     });
@@ -413,6 +486,7 @@ $('lo').onclick = () => {
   try { sessionStorage.removeItem('mdk'); } catch (e) {}
   location.reload();
 };
+
 let saved = null;
 try { saved = sessionStorage.getItem('mdk'); } catch (e) {}
 if (saved) {
